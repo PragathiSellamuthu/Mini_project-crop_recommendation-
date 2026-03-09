@@ -1,0 +1,73 @@
+import java.util.Scanner;
+
+public class Crop {
+
+    public static void main(String[] args) {
+
+        Scanner sc = new Scanner(System.in);
+
+        System.out.println("AI Crop Recommendation System");
+
+        System.out.print("Enter Temperature: ");
+        double temp = sc.nextDouble();
+
+        System.out.print("Enter Humidity: ");
+        double humidity = sc.nextDouble();
+
+        System.out.print("Enter Rainfall: ");
+        double rainfall = sc.nextDouble();
+
+        String crop;
+
+        if(temp > 20 && humidity > 80 && rainfall > 200) {
+            crop = "Rice";
+        } 
+        else if(temp > 18 && rainfall < 100) {
+            crop = "Maize";
+        } 
+        else if(temp > 25 && humidity < 60) {
+            crop = "Cotton";
+        } 
+        else {
+            crop = "Wheat";
+        }
+
+        System.out.println("Recommended Crop: " + crop);
+
+        sc.close();
+    }
+}
+
+=======================================================================================================================================================================================================================
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+
+public class Crop {
+
+    public static void main(String[] args) {
+
+        String file = "Crop_recommendation.csv";
+        String line;
+
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(file));
+
+            System.out.println("Reading Crop Dataset:\n");
+
+            int count = 0;
+
+            while ((line = br.readLine()) != null && count < 5) {
+                System.out.println(line);
+                count++;
+            }
+
+            br.close();
+
+        } catch (IOException e) {
+            System.out.println("Error reading file: " + e.getMessage());
+        }
+    }
+}
+==============================================================================================================================================================================================
