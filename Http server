@@ -1,0 +1,158 @@
+package com.crop;
+
+import java.io.*;
+import java.net.*;
+import java.nio.file.*;
+import java.util.*;
+
+public class SimpleHttpServer {
+    private static final int PORT = 8080;
+    private static final String WEB_DIR = "src/main/webapp"; // Standard Eclipse WebContent location
+
+    public static void main(String[] args) {
+        try (ServerSocket serverSocket = new ServerSocket(PORT)) {
+            System.out.println("AI Crop Recommendation Server started on port " + PORT);
+            System.out.println("Open your browser to: http://localhost:" + PORT + "/index.html");
+
+            while (true) {
+                try (Socket clientSocket = serverSocket.accept()) {
+                    handleClient(clientSocket);
+                } catch (Exception e) {
+                    System.err.println("Error handling client: " + e.getMessage());
+                }
+            }
+        } catch (IOException e) {
+            System.err.println("Could not listen on port " + PORT);
+        }
+    }
+
+    private static void handleClient(Socket socket) throws IOException {
+        BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        OutputStream out = socket.getOutputStream();
+
+        String line = in.readLine();
+        if (line == null) return;
+
+        String[] requestParts = line.split(" ");
+        String method = requestParts[0];
+        String path = requestParts[1];
+
+        // Consume headers
+        while (!(line = in.readLine()).isEmpty());
+
+        if (method.equals("GET")) {
+            serveFile(path, out);
+        } else if (method.equals("POST") && path.equals("/RecommendCrop")) {
+            // Read POST body if it's there
+            StringBuilder payload = new StringBuilder();
+            while (in.ready()) {
+                payload.append((char) in.read());
+            }
+            handlePost(payload.toString(), out);
+        }
+    }
+
+    private static void serveFile(String path, OutputStream out) throws IOException {
+        if (path.equals("/")) path = "/index.html";
+        
+        // Try both common locations for WebContent
+        Path filePath = Paths.get("WebContent", path);
+        if (!Files.exists(filePath)) {
+            filePath = Paths.get("src/main/webapp", path);
+        }
+
+        if (Files.exists(filePath) && !Files.isDirectory(filePath)) {
+            String contentType = getContentType(path);
+            byte[] content = Files.readAllBytes(filePath);
+            
+            out.write("HTTP/1.1 200 OK\r\n".getBytes());
+            out.write(("Content-Type: " + contentType + "\r\n").getBytes());
+            out.write(("Content-Length: " + content.length + "\r\n").getBytes());
+            out.write("\r\n".getBytes());
+            out.write(content);
+        } else {
+            String response = "HTTP/1.1 404 Not Found\r\n\r\nFile Not Found";
+            out.write(response.getBytes());
+        }
+        out.flush();
+    }
+
+    private static void handlePost(String data, OutputStream out) throws IOException {
+        Map<String, String> params = parseParams(data);
+        try {
+            double n = Double.parseDouble(params.get("n"));
+            double p = Double.parseDouble(params.get("p"));
+            double k = Double.parseDouble(params.get("k"));
+            double t = Double.parseDouble(params.get("temperature"));
+            double h = Double.parseDouble(params.get("humidity"));
+            double ph = Double.parseDouble(params.get("ph"));
+            double r = Double.parseDouble(params.get("rainfall"));
+
+            String result = findBestCrop(n, p, k, t, h, ph, r);
+            sendHtmlResponse(out, result);
+        } catch (Exception e) {
+            sendHtmlResponse(out, "Error: Invalid Input Parameters");
+        }
+    }
+
+    private static String findBestCrop(double n, double p, double k, double t, double h, double ph, double r) {
+        String bestLabel = "Unknown";
+        double minDistance = Double.MAX_VALUE;
+
+        try {
+            Path csvPath = Paths.get("WebContent", "Crop_recommendation.csv");
+            if (!Files.exists(csvPath)) csvPath = Paths.get("src/main/webapp", "Crop_recommendation.csv");
+            
+            List<String> lines = Files.readAllLines(csvPath);
+            for (int i = 1; i < lines.size(); i++) {
+                String[] parts = lines.get(i).split(",");
+                double dn = Double.parseDouble(parts[0]);
+                double dp = Double.parseDouble(parts[1]);
+                double dk = Double.parseDouble(parts[2]);
+                double dt = Double.parseDouble(parts[3]);
+                double dh = Double.parseDouble(parts[4]);
+                double dph = Double.parseDouble(parts[5]);
+                double dr = Double.parseDouble(parts[6]);
+                
+                double dist = Math.sqrt(Math.pow(n-dn,2) + Math.pow(p-dp,2) + Math.pow(k-dk,2) + 
+                              Math.pow(t-dt,2) + Math.pow(h-dh,2) + Math.pow(ph-dph,2) + Math.pow(r-dr,2));
+                
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    bestLabel = parts[7];
+                }
+            }
+        } catch (Exception e) { e.printStackTrace(); }
+        return bestLabel;
+    }
+
+    private static void sendHtmlResponse(OutputStream out, String crop) throws IOException {
+        String response = "<!DOCTYPE html><html><head><link rel='stylesheet' href='style.css'></head><body>" +
+                          "<div class='container result-container'><h1>Recommendation Result</h1>" +
+                          "<p>The most suitable crop is:</p><div class='result-crop'>" + crop + "</div>" +
+                          "<a href='index.html' class='back-btn'>Go Back</a></div></body></html>";
+        
+        out.write("HTTP/1.1 200 OK\r\n".getBytes());
+        out.write("Content-Type: text/html\r\n".getBytes());
+        out.write(("Content-Length: " + response.length() + "\r\n").getBytes());
+        out.write("\r\n".getBytes());
+        out.write(response.getBytes());
+        out.flush();
+    }
+
+    private static Map<String, String> parseParams(String data) {
+        Map<String, String> map = new HashMap<>();
+        for (String pair : data.split("&")) {
+            String[] kv = pair.split("=");
+            if (kv.length > 1) map.put(URLDecoder.decode(kv[0]), URLDecoder.decode(kv[1]));
+        }
+        return map;
+    }
+
+    private static String getContentType(String path) {
+        if (path.endsWith(".html")) return "text/html";
+        if (path.endsWith(".css")) return "text/css";
+        if (path.endsWith(".csv")) return "text/csv";
+        return "text/plain";
+    }
+}
