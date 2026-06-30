@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Based Crop Recommendation System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>AI Based Crop Recommendation System</h1>
+        <p class="subtitle">Enter the soil and weather parameters to find the most suitable crop.</p>
+        
+        <form action="RecommendCrop" method="post">
+            <div class="form-group">
+                <label for="n">Nitrogen (N):</label>
+                <input type="number" step="any" id="n" name="n" required placeholder="e.g. 90">
+            </div>
+            
+            <div class="form-group">
+                <label for="p">Phosphorus (P):</label>
+                <input type="number" step="any" id="p" name="p" required placeholder="e.g. 42">
+            </div>
+            
+            <div class="form-group">
+                <label for="k">Potassium (K):</label>
+                <input type="number" step="any" id="k" name="k" required placeholder="e.g. 43">
+            </div>
+            
+            <div class="form-group">
+                <label for="temperature">Temperature (°C):</label>
+                <input type="number" step="any" id="temperature" name="temperature" required placeholder="e.g. 20.8">
+            </div>
+            
+            <div class="form-group">
+                <label for="humidity">Humidity (%):</label>
+                <input type="number" step="any" id="humidity" name="humidity" required placeholder="e.g. 82.0">
+            </div>
+            
+            <div class="form-group">
+                <label for="ph">pH Value:</label>
+                <input type="number" step="any" id="ph" name="ph" required placeholder="e.g. 6.5">
+            </div>
+            
+            <div class="form-group">
+                <label for="rainfall">Rainfall (mm):</label>
+                <input type="number" step="any" id="rainfall" name="rainfall" required placeholder="e.g. 202.9">
+            </div>
+            
+            <button type="submit" class="submit-btn">Recommend Crop</button>
+        </form>
+    </div>
+</body>
+</html>
